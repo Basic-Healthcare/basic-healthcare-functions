@@ -1,0 +1,11 @@
+# Python Azure Functions requirements
+azure-functions
+azure-storage-blob
+azure-identity
+azure-keyvault-secrets
+azure-monitor-opentelemetry
+requests
+
+# Test dependencies
+pytest
+azure-functions-worker

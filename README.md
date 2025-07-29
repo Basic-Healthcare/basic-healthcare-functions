@@ -66,6 +66,8 @@ az ad sp create-for-rbac --name "basic-healthcare-sp" \
 # Add the output as AZURE_CREDENTIALS secret in GitHub
 ```
 
+**✅ AZURE_CREDENTIALS secret has been configured!**
+
 ### Local Development
 
 1. **Clone the repository**

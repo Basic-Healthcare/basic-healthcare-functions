@@ -35,10 +35,12 @@ This solution includes:
 ## 🚀 API Endpoints
 
 ### Health Check
+
 - **GET** `/api/health`
 - Returns the health status of the function app
 
 ### Data Lake Operations
+
 - **POST** `/api/datalake/upload` - Upload files to the data lake
 - **GET** `/api/datalake/list` - List files in the data lake containers
 
@@ -71,17 +73,20 @@ az ad sp create-for-rbac --name "basic-healthcare-sp" \
 ### Local Development
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd basic-healthcare-functions
    ```
 
 2. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Configure local settings**
+
    ```bash
    cp local.settings.json.example local.settings.json
    # Edit local.settings.json with your Azure Storage connection string
@@ -95,8 +100,9 @@ az ad sp create-for-rbac --name "basic-healthcare-sp" \
 ### Infrastructure Configuration
 
 1. **Update Terraform variables**
-   
+
    Edit `infra/terraform.tfvars.json`:
+
    ```json
    {
      "environment_name": "dev",
@@ -105,8 +111,9 @@ az ad sp create-for-rbac --name "basic-healthcare-sp" \
    ```
 
 2. **Deploy via GitHub Actions**
-   
+
    Push to the `main` branch to trigger automatic deployment:
+
    ```bash
    git add .
    git commit -m "Deploy healthcare functions"

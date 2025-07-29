@@ -3,8 +3,10 @@ azure-functions
 azure-storage-blob
 azure-identity
 azure-keyvault-secrets
-azure-monitor-opentelemetry
 requests
+
+# Monitoring (using Application Insights SDK instead of OpenTelemetry to avoid grpcio issues)
+opencensus-azure-monitor
 
 # Test dependencies
 pytest

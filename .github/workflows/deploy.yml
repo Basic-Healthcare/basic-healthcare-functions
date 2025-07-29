@@ -2,38 +2,39 @@ name: Deploy Basic Healthcare Functions to Azure
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
-  PYTHON_VERSION: '3.11'
-  TERRAFORM_VERSION: '1.5.0'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: "."
+  PYTHON_VERSION: "3.11"
+  TERRAFORM_VERSION: "1.5.0"
 
 jobs:
   test:
     name: Test Functions
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest azure-functions-worker
-    
-    - name: Run tests
-      run: |
-        python -m pytest test_functions.py -v
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          # Install dependencies with prefer-binary to avoid compilation issues
+          pip install --prefer-binary -r requirements.txt
+          pip install --prefer-binary pytest azure-functions-worker
+
+      - name: Run tests
+        run: |
+          python -m pytest test_functions.py -v
 
   terraform-plan:
     name: Terraform Plan
@@ -42,54 +43,54 @@ jobs:
     outputs:
       tfplanExitCode: ${{ steps.tf-plan.outputs.exitcode }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TERRAFORM_VERSION }}
-    
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
-    - name: Terraform Init
-      working-directory: infra
-      run: terraform init
-    
-    - name: Terraform Validate
-      working-directory: infra
-      run: terraform validate
-    
-    - name: Terraform Plan
-      id: tf-plan
-      working-directory: infra
-      run: |
-        export exitcode=0
-        terraform plan -var-file="terraform.tfvars.json" -detailed-exitcode -no-color -out tfplan || export exitcode=$?
-        
-        echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
-        
-        if [ $exitcode -eq 1 ]; then
-          echo "Terraform Plan Failed"
-          exit 1
-        elif [ $exitcode -eq 0 ]; then
-          echo "No changes detected"
-        elif [ $exitcode -eq 2 ]; then
-          echo "Changes detected"
-        fi
-    
-    - name: Terraform Show
-      working-directory: infra
-      run: terraform show -no-color tfplan
-    
-    - name: Upload Terraform Plan
-      uses: actions/upload-artifact@v3
-      with:
-        name: tfplan
-        path: infra/tfplan
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        working-directory: infra
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: infra
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: tf-plan
+        working-directory: infra
+        run: |
+          export exitcode=0
+          terraform plan -var-file="terraform.tfvars.json" -detailed-exitcode -no-color -out tfplan || export exitcode=$?
+
+          echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
+
+          if [ $exitcode -eq 1 ]; then
+            echo "Terraform Plan Failed"
+            exit 1
+          elif [ $exitcode -eq 0 ]; then
+            echo "No changes detected"
+          elif [ $exitcode -eq 2 ]; then
+            echo "Changes detected"
+          fi
+
+      - name: Terraform Show
+        working-directory: infra
+        run: terraform show -no-color tfplan
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan
+          path: infra/tfplan
 
   terraform-apply:
     name: Terraform Apply
@@ -98,52 +99,52 @@ jobs:
     if: github.ref == 'refs/heads/main' && needs.terraform-plan.outputs.tfplanExitCode == 2
     environment: production
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TERRAFORM_VERSION }}
-        terraform_wrapper: false
-    
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
-    - name: Download Terraform Plan
-      uses: actions/download-artifact@v3
-      with:
-        name: tfplan
-        path: infra/
-    
-    - name: Terraform Init
-      working-directory: infra
-      run: terraform init
-    
-    - name: Terraform Apply
-      working-directory: infra
-      run: terraform apply -auto-approve tfplan
-    
-    - name: Get Function App Name
-      id: get-function-app
-      working-directory: infra
-      run: |
-        FUNCTION_APP_NAME=$(terraform output -raw function_app_name)
-        echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
-        echo "Function App Name: $FUNCTION_APP_NAME"
-    
-    - name: Output Infrastructure Details
-      working-directory: infra
-      run: |
-        echo "## Infrastructure Deployment Complete 🚀" >> $GITHUB_STEP_SUMMARY
-        echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
-        echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Function App | $(terraform output -raw function_app_name) |" >> $GITHUB_STEP_SUMMARY
-        echo "| Function App URL | $(terraform output -raw function_app_url) |" >> $GITHUB_STEP_SUMMARY
-        echo "| Storage Account | $(terraform output -raw storage_account_name) |" >> $GITHUB_STEP_SUMMARY
-        echo "| Resource Group | $(terraform output -raw resource_group_name) |" >> $GITHUB_STEP_SUMMARY
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan
+          path: infra/
+
+      - name: Terraform Init
+        working-directory: infra
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: infra
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get Function App Name
+        id: get-function-app
+        working-directory: infra
+        run: |
+          FUNCTION_APP_NAME=$(terraform output -raw function_app_name)
+          echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
+          echo "Function App Name: $FUNCTION_APP_NAME"
+
+      - name: Output Infrastructure Details
+        working-directory: infra
+        run: |
+          echo "## Infrastructure Deployment Complete 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Function App | $(terraform output -raw function_app_name) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Function App URL | $(terraform output -raw function_app_url) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Storage Account | $(terraform output -raw storage_account_name) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource Group | $(terraform output -raw resource_group_name) |" >> $GITHUB_STEP_SUMMARY
 
   deploy-function:
     name: Deploy Function App
@@ -152,104 +153,105 @@ jobs:
     if: github.ref == 'refs/heads/main' && (needs.terraform-plan.outputs.tfplanExitCode == 2 || needs.terraform-plan.outputs.tfplanExitCode == 0)
     environment: production
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Setup Terraform (for outputs)
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TERRAFORM_VERSION }}
-        terraform_wrapper: false
-    
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
-    - name: Terraform Init (for outputs)
-      working-directory: infra
-      run: terraform init
-    
-    - name: Get Function App Name
-      id: get-function-app
-      working-directory: infra
-      run: |
-        FUNCTION_APP_NAME=$(terraform output -raw function_app_name)
-        echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
-        echo "Function App Name: $FUNCTION_APP_NAME"
-    
-    - name: Create deployment package
-      run: |
-        # Create a clean deployment package
-        mkdir -p deployment_package
-        cp function_app.py deployment_package/
-        cp host.json deployment_package/
-        cp requirements.txt deployment_package/
-        
-        # Create zip package
-        cd deployment_package
-        zip -r ../function_deployment.zip .
-        cd ..
-    
-    - name: Deploy to Azure Functions using Run From Package
-      run: |
-        FUNCTION_APP_NAME="${{ steps.get-function-app.outputs.function_app_name }}"
-        
-        # Upload zip package to Function App
-        az functionapp deployment source config-zip \
-          --name $FUNCTION_APP_NAME \
-          --resource-group $(cd infra && terraform output -raw resource_group_name) \
-          --src function_deployment.zip
-    
-    - name: Wait for deployment to complete
-      run: |
-        echo "Waiting for deployment to stabilize..."
-        sleep 30
-    
-    - name: Test deployed function
-      id: test-function
-      run: |
-        FUNCTION_APP_URL="https://${{ steps.get-function-app.outputs.function_app_name }}.azurewebsites.net"
-        
-        # Get function key for testing
-        FUNCTION_KEY=$(az functionapp function keys list \
-          --name ${{ steps.get-function-app.outputs.function_app_name }} \
-          --resource-group $(cd infra && terraform output -raw resource_group_name) \
-          --function-name health_check \
-          --query "default" -o tsv)
-        
-        # Test health endpoint
-        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-          "${FUNCTION_APP_URL}/api/health?code=${FUNCTION_KEY}")
-        
-        echo "Health check status: $HTTP_STATUS"
-        
-        if [ $HTTP_STATUS -eq 200 ]; then
-          echo "✅ Health check passed!"
-          echo "health_check_status=success" >> $GITHUB_OUTPUT
-        else
-          echo "❌ Health check failed with status: $HTTP_STATUS"
-          echo "health_check_status=failed" >> $GITHUB_OUTPUT
-          exit 1
-        fi
-    
-    - name: Deployment Summary
-      run: |
-        echo "## Function App Deployment Complete 🎉" >> $GITHUB_STEP_SUMMARY
-        echo "| Endpoint | URL |" >> $GITHUB_STEP_SUMMARY
-        echo "|----------|-----|" >> $GITHUB_STEP_SUMMARY
-        echo "| Health Check | https://${{ steps.get-function-app.outputs.function_app_name }}.azurewebsites.net/api/health |" >> $GITHUB_STEP_SUMMARY
-        echo "| Data Lake Upload | https://${{ steps.get-function-app.outputs.function_app_name }}.azurewebsites.net/api/datalake/upload |" >> $GITHUB_STEP_SUMMARY
-        echo "| Data Lake List | https://${{ steps.get-function-app.outputs.function_app_name }}.azurewebsites.net/api/datalake/list |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Health Check Status:** ${{ steps.test-function.outputs.health_check_status == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          # Install dependencies with prefer-binary to avoid compilation issues
+          pip install --prefer-binary -r requirements.txt
+
+      - name: Setup Terraform (for outputs)
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init (for outputs)
+        working-directory: infra
+        run: terraform init
+
+      - name: Get Function App Name
+        id: get-function-app
+        working-directory: infra
+        run: |
+          FUNCTION_APP_NAME=$(terraform output -raw function_app_name)
+          echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
+          echo "Function App Name: $FUNCTION_APP_NAME"
+
+      - name: Create deployment package
+        run: |
+          # Create a clean deployment package
+          mkdir -p deployment_package
+          cp function_app.py deployment_package/
+          cp host.json deployment_package/
+          cp requirements.txt deployment_package/
+
+          # Create zip package
+          cd deployment_package
+          zip -r ../function_deployment.zip .
+          cd ..
+
+      - name: Deploy to Azure Functions using Run From Package
+        run: |
+          FUNCTION_APP_NAME="${{ steps.get-function-app.outputs.function_app_name }}"
+
+          # Upload zip package to Function App
+          az functionapp deployment source config-zip \
+            --name $FUNCTION_APP_NAME \
+            --resource-group $(cd infra && terraform output -raw resource_group_name) \
+            --src function_deployment.zip
+
+      - name: Wait for deployment to complete
+        run: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+
+      - name: Test deployed function
+        id: test-function
+        run: |
+          FUNCTION_APP_URL="https://${{ steps.get-function-app.outputs.function_app_name }}.azurewebsites.net"
+
+          # Get function key for testing
+          FUNCTION_KEY=$(az functionapp function keys list \
+            --name ${{ steps.get-function-app.outputs.function_app_name }} \
+            --resource-group $(cd infra && terraform output -raw resource_group_name) \
+            --function-name health_check \
+            --query "default" -o tsv)
+
+          # Test health endpoint
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${FUNCTION_APP_URL}/api/health?code=${FUNCTION_KEY}")
+
+          echo "Health check status: $HTTP_STATUS"
+
+          if [ $HTTP_STATUS -eq 200 ]; then
+            echo "✅ Health check passed!"
+            echo "health_check_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Health check failed with status: $HTTP_STATUS"
+            echo "health_check_status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Deployment Summary
+        run: |
+          echo "## Function App Deployment Complete 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "| Endpoint | URL |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Health Check | https://${{ steps.get-function-app.outputs.function_app_name }}.azurewebsites.net/api/health |" >> $GITHUB_STEP_SUMMARY
+          echo "| Data Lake Upload | https://${{ steps.get-function-app.outputs.function_app_name }}.azurewebsites.net/api/datalake/upload |" >> $GITHUB_STEP_SUMMARY
+          echo "| Data Lake List | https://${{ steps.get-function-app.outputs.function_app_name }}.azurewebsites.net/api/datalake/list |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Health Check Status:** ${{ steps.test-function.outputs.health_check_status == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY

@@ -1,4 +1,5 @@
 # Python Azure Functions requirements
+# Updated: July 29, 2025 - Dependencies optimized for deployment
 azure-functions
 azure-storage-blob
 azure-identity

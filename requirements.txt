@@ -6,8 +6,8 @@ azure-identity
 azure-keyvault-secrets
 requests
 
-# Monitoring (using Application Insights SDK instead of OpenTelemetry to avoid grpcio issues)
-opencensus-azure-monitor
+# Monitoring - Application Insights integration
+applicationinsights
 
 # Test dependencies
 pytest

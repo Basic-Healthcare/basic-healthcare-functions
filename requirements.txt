@@ -1,13 +1,9 @@
-# Python Azure Functions requirements
-# Updated: July 29, 2025 - Dependencies optimized for deployment
+# Python Azure Functions requirements - Minimal set to avoid grpcio issues
+# Updated: July 29, 2025 - Minimal dependencies to avoid compilation errors
 azure-functions
 azure-storage-blob
 azure-identity
-azure-keyvault-secrets
 requests
-
-# Monitoring - Application Insights integration
-applicationinsights
 
 # Test dependencies
 pytest

@@ -133,6 +133,13 @@ jobs:
         working-directory: infra
         run: terraform init
 
+      - name: Import existing resources if they exist
+        working-directory: infra
+        run: |
+          # Try to import the resource group if it exists
+          terraform import azurerm_resource_group.main /subscriptions/82ba81d8-2ee1-4c98-87ce-dc378bef4592/resourceGroups/rg-dev-EastUS || echo "Resource group not found or already imported"
+        continue-on-error: true
+
       - name: Terraform Apply
         working-directory: infra
         run: terraform apply -auto-approve tfplan

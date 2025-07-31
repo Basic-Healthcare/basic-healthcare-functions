@@ -5,7 +5,6 @@ from datetime import datetime
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
-@app.route(route="health")
 def health_check(req: func.HttpRequest) -> func.HttpResponse:
     """
     Simple health check endpoint to verify the function is running
@@ -35,7 +34,6 @@ def health_check(req: func.HttpRequest) -> func.HttpResponse:
             headers={"Content-Type": "application/json"}
         )
 
-@app.route(route="status")
 def status_check(req: func.HttpRequest) -> func.HttpResponse:
     """
     Extended status endpoint with basic system information
@@ -71,3 +69,7 @@ def status_check(req: func.HttpRequest) -> func.HttpResponse:
             status_code=500,
             headers={"Content-Type": "application/json"}
         )
+
+# Register the functions with the app
+app.route(route="health")(health_check)
+app.route(route="status")(status_check)

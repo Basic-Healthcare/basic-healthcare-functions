@@ -157,13 +157,50 @@ jobs:
 
       - name: Terraform Apply
         working-directory: infra
-        run: terraform apply -auto-approve tfplan-apply
+        run: |
+          echo "🚀 Starting Terraform Apply..."
+          terraform apply -auto-approve tfplan-apply
+          
+          echo "✅ Terraform Apply completed. Checking results..."
+          terraform state list
+          
+          echo "📋 Checking outputs..."
+          terraform output || echo "No outputs available yet"
+
+      - name: Terraform Refresh (if needed)
+        working-directory: infra
+        run: |
+          echo "🔄 Running terraform refresh to ensure state is up to date..."
+          terraform refresh -var-file="terraform.tfvars.json"
+          
+          echo "📋 Outputs after refresh:"
+          terraform output || echo "Still no outputs available"
 
       - name: Verify Terraform State
         working-directory: infra
         run: |
-          echo "Checking Terraform state..."
-          terraform state list || echo "No state found"
+          echo "🔍 Checking Terraform state..."
+          
+          if terraform state list > /dev/null 2>&1; then
+            echo "✅ Terraform state exists. Resources:"
+            terraform state list
+            
+            # Check for key resources
+            if terraform state list | grep -q "azurerm_resource_group.main"; then
+              echo "✅ Resource group found"
+            else
+              echo "❌ Resource group missing"
+            fi
+            
+            if terraform state list | grep -q "azurerm_linux_function_app.main"; then
+              echo "✅ Function app found"
+            else
+              echo "❌ Function app missing"
+            fi
+          else
+            echo "❌ No Terraform state found"
+            exit 1
+          fi
 
       - name: Get Function App Name
         id: get-function-app

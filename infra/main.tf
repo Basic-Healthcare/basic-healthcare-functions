@@ -222,35 +222,38 @@ resource "azurerm_linux_function_app" "main" {
 }
 
 # Role assignments for Managed Identity
-resource "azurerm_role_assignment" "storage_blob_data_contributor" {
-  scope                = azurerm_storage_account.data_lake.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.main.principal_id
-}
+# NOTE: Temporarily commented out due to service principal permissions
+# These will need to be added manually or via a service principal with User Access Administrator role
 
-resource "azurerm_role_assignment" "storage_blob_data_owner" {
-  scope                = azurerm_storage_account.data_lake.id
-  role_definition_name = "Storage Blob Data Owner"
-  principal_id         = azurerm_user_assigned_identity.main.principal_id
-}
+# resource "azurerm_role_assignment" "storage_blob_data_contributor" {
+#   scope                = azurerm_storage_account.data_lake.id
+#   role_definition_name = "Storage Blob Data Contributor"
+#   principal_id         = azurerm_user_assigned_identity.main.principal_id
+# }
 
-resource "azurerm_role_assignment" "storage_queue_data_contributor" {
-  scope                = azurerm_storage_account.data_lake.id
-  role_definition_name = "Storage Queue Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.main.principal_id
-}
+# resource "azurerm_role_assignment" "storage_blob_data_owner" {
+#   scope                = azurerm_storage_account.data_lake.id
+#   role_definition_name = "Storage Blob Data Owner"
+#   principal_id         = azurerm_user_assigned_identity.main.principal_id
+# }
 
-resource "azurerm_role_assignment" "storage_table_data_contributor" {
-  scope                = azurerm_storage_account.data_lake.id
-  role_definition_name = "Storage Table Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.main.principal_id
-}
+# resource "azurerm_role_assignment" "storage_queue_data_contributor" {
+#   scope                = azurerm_storage_account.data_lake.id
+#   role_definition_name = "Storage Queue Data Contributor"
+#   principal_id         = azurerm_user_assigned_identity.main.principal_id
+# }
 
-resource "azurerm_role_assignment" "monitoring_metrics_publisher" {
-  scope                = azurerm_resource_group.main.id
-  role_definition_name = "Monitoring Metrics Publisher"
-  principal_id         = azurerm_user_assigned_identity.main.principal_id
-}
+# resource "azurerm_role_assignment" "storage_table_data_contributor" {
+#   scope                = azurerm_storage_account.data_lake.id
+#   role_definition_name = "Storage Table Data Contributor"
+#   principal_id         = azurerm_user_assigned_identity.main.principal_id
+# }
+
+# resource "azurerm_role_assignment" "monitoring_metrics_publisher" {
+#   scope                = azurerm_resource_group.main.id
+#   role_definition_name = "Monitoring Metrics Publisher"
+#   principal_id         = azurerm_user_assigned_identity.main.principal_id
+# }
 
 # Diagnostic settings for Function App
 resource "azurerm_monitor_diagnostic_setting" "function_app" {

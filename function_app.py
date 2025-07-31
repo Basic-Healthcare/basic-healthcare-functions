@@ -3,7 +3,6 @@ import logging
 import json
 import os
 from azure.storage.blob import BlobServiceClient
-from azure.identity import DefaultAzureCredential
 from datetime import datetime
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
@@ -45,19 +44,18 @@ def upload_to_datalake(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function for data lake upload.')
     
     try:
-        # Get the storage account connection from environment variables
-        storage_account_url = os.environ.get('STORAGE_ACCOUNT_URL')
+        # Get storage connection string from environment variables
+        connection_string = os.environ.get('AzureWebJobsStorage')
         
-        if not storage_account_url:
+        if not connection_string:
             return func.HttpResponse(
-                json.dumps({"error": "Storage account URL not configured"}),
+                json.dumps({"error": "Storage connection string not configured"}),
                 status_code=500,
                 headers={"Content-Type": "application/json"}
             )
         
-        # Use managed identity for authentication
-        credential = DefaultAzureCredential()
-        blob_service_client = BlobServiceClient(account_url=storage_account_url, credential=credential)
+        # Use connection string for authentication (simpler for initial deployment)
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
         
         # Get request body
         req_body = req.get_json()
@@ -111,19 +109,18 @@ def list_datalake_files(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function for listing data lake files.')
     
     try:
-        # Get the storage account connection from environment variables
-        storage_account_url = os.environ.get('STORAGE_ACCOUNT_URL')
+        # Get storage connection string from environment variables
+        connection_string = os.environ.get('AzureWebJobsStorage')
         
-        if not storage_account_url:
+        if not connection_string:
             return func.HttpResponse(
-                json.dumps({"error": "Storage account URL not configured"}),
+                json.dumps({"error": "Storage connection string not configured"}),
                 status_code=500,
                 headers={"Content-Type": "application/json"}
             )
         
-        # Use managed identity for authentication
-        credential = DefaultAzureCredential()
-        blob_service_client = BlobServiceClient(account_url=storage_account_url, credential=credential)
+        # Use connection string for authentication (simpler for initial deployment)
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
         
         container_name = req.params.get('container', 'healthcare-data')
         

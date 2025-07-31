@@ -1,10 +1,8 @@
-# Python Azure Functions requirements - Minimal set to avoid grpcio issues
-# Updated: July 29, 2025 - Minimal dependencies to avoid compilation errors
+# Python Azure Functions requirements - Ultra minimal to avoid grpcio
+# Updated: July 29, 2025 - Avoid all packages that pull grpcio
 azure-functions
 azure-storage-blob
-azure-identity
 requests
 
 # Test dependencies
 pytest
-azure-functions-worker

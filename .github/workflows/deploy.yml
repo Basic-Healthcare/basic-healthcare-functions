@@ -76,6 +76,7 @@ jobs:
           terraform plan -var-file="terraform.tfvars.json" -detailed-exitcode -no-color -out tfplan || export exitcode=$?
 
           echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
+          echo "Terraform Plan Exit Code: $exitcode"
 
           if [ $exitcode -eq 1 ]; then
             echo "Terraform Plan Failed"
@@ -100,9 +101,14 @@ jobs:
     name: Terraform Apply
     runs-on: ubuntu-latest
     needs: terraform-plan
-    if: github.ref == 'refs/heads/main' && needs.terraform-plan.outputs.tfplanExitCode == 2
-    environment: production
+    if: github.ref == 'refs/heads/main' && needs.terraform-plan.outputs.tfplanExitCode != 1
     steps:
+      - name: Debug - Check Plan Exit Code
+        run: |
+          echo "Terraform Plan Exit Code: ${{ needs.terraform-plan.outputs.tfplanExitCode }}"
+          echo "GitHub Ref: ${{ github.ref }}"
+          echo "Should Apply: ${{ github.ref == 'refs/heads/main' && needs.terraform-plan.outputs.tfplanExitCode != 1 }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -154,8 +160,7 @@ jobs:
     name: Deploy Function App
     runs-on: ubuntu-latest
     needs: [terraform-apply, terraform-plan]
-    if: github.ref == 'refs/heads/main' && (needs.terraform-plan.outputs.tfplanExitCode == 2 || needs.terraform-plan.outputs.tfplanExitCode == 0)
-    environment: production
+    if: github.ref == 'refs/heads/main' && needs.terraform-plan.outputs.tfplanExitCode != 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

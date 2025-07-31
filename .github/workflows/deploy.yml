@@ -159,13 +159,25 @@ jobs:
         working-directory: infra
         run: terraform apply -auto-approve tfplan-apply
 
+      - name: Verify Terraform State
+        working-directory: infra
+        run: |
+          echo "Checking Terraform state..."
+          terraform state list || echo "No state found"
+
       - name: Get Function App Name
         id: get-function-app
         working-directory: infra
         run: |
-          FUNCTION_APP_NAME=$(terraform output -raw function_app_name)
-          echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
-          echo "Function App Name: $FUNCTION_APP_NAME"
+          # Check if outputs are available
+          if terraform output -json > /dev/null 2>&1; then
+            FUNCTION_APP_NAME=$(terraform output -raw function_app_name 2>/dev/null || echo "output-not-found")
+            echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
+            echo "Function App Name: $FUNCTION_APP_NAME"
+          else
+            echo "Terraform outputs not available yet"
+            echo "function_app_name=not-available" >> $GITHUB_OUTPUT
+          fi
 
       - name: Output Infrastructure Details
         working-directory: infra
@@ -173,10 +185,17 @@ jobs:
           echo "## Infrastructure Deployment Complete 🚀" >> $GITHUB_STEP_SUMMARY
           echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Function App | $(terraform output -raw function_app_name) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Function App URL | $(terraform output -raw function_app_url) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Storage Account | $(terraform output -raw storage_account_name) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Resource Group | $(terraform output -raw resource_group_name) |" >> $GITHUB_STEP_SUMMARY
+          
+          # Handle outputs gracefully
+          FUNCTION_APP_NAME=$(terraform output -raw function_app_name 2>/dev/null || echo "not-available")
+          FUNCTION_APP_URL=$(terraform output -raw function_app_url 2>/dev/null || echo "not-available")
+          STORAGE_ACCOUNT_NAME=$(terraform output -raw storage_account_name 2>/dev/null || echo "not-available")
+          RESOURCE_GROUP_NAME=$(terraform output -raw resource_group_name 2>/dev/null || echo "not-available")
+          
+          echo "| Function App | $FUNCTION_APP_NAME |" >> $GITHUB_STEP_SUMMARY
+          echo "| Function App URL | $FUNCTION_APP_URL |" >> $GITHUB_STEP_SUMMARY
+          echo "| Storage Account | $STORAGE_ACCOUNT_NAME |" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource Group | $RESOURCE_GROUP_NAME |" >> $GITHUB_STEP_SUMMARY
 
   deploy-function:
     name: Deploy Function App
@@ -221,9 +240,20 @@ jobs:
         id: get-function-app
         working-directory: infra
         run: |
-          FUNCTION_APP_NAME=$(terraform output -raw function_app_name)
-          echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
-          echo "Function App Name: $FUNCTION_APP_NAME"
+          # Check if outputs are available
+          if terraform output -json > /dev/null 2>&1; then
+            FUNCTION_APP_NAME=$(terraform output -raw function_app_name 2>/dev/null || echo "output-not-found")
+            echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
+            echo "Function App Name: $FUNCTION_APP_NAME"
+            
+            if [ "$FUNCTION_APP_NAME" = "output-not-found" ]; then
+              echo "❌ Function app name not available from Terraform outputs"
+              exit 1
+            fi
+          else
+            echo "❌ Terraform outputs not available"
+            exit 1
+          fi
 
       - name: Create deployment package
         run: |

@@ -1,8 +1,6 @@
-# Python Azure Functions requirements - Ultra minimal to avoid grpcio
-# Updated: July 29, 2025 - Avoid all packages that pull grpcio
-azure-functions
-azure-storage-blob
-requests
+# Python Azure Functions requirements - Basic setup only
+# Updated: July 31, 2025 - Most minimal possible setup
+azure-functions==1.20.0
 
 # Test dependencies
-pytest
+pytest==7.4.0

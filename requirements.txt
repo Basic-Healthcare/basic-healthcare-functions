@@ -1,6 +1,6 @@
-# Python Azure Functions requirements - Basic setup only
-# Updated: July 31, 2025 - Most minimal possible setup
-azure-functions==1.20.0
+# Python Azure Functions requirements - Minimal working version
+# Updated: July 31, 2025 - Use older version that doesn't pull grpcio
+azure-functions==1.18.0
 
 # Test dependencies
 pytest==7.4.0

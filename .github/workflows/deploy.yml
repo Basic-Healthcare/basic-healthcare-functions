@@ -28,9 +28,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          # Install dependencies with prefer-binary to avoid compilation issues
-          pip install --prefer-binary -r requirements.txt
-          pip install --prefer-binary pytest azure-functions-worker
+          # Create a constraints file to block grpcio
+          echo "grpcio" > constraints.txt
+          echo "grpcio-tools" >> constraints.txt
+          echo "grpcio-status" >> constraints.txt
+          # Install with constraints to prevent grpcio installation
+          pip install --prefer-binary --constraint constraints.txt -r requirements.txt
+          pip install --prefer-binary pytest
 
       - name: Run tests
         run: |
@@ -164,8 +168,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          # Install dependencies with prefer-binary to avoid compilation issues
-          pip install --prefer-binary -r requirements.txt
+          # Create a constraints file to block grpcio
+          echo "grpcio" > constraints.txt
+          echo "grpcio-tools" >> constraints.txt
+          echo "grpcio-status" >> constraints.txt
+          # Install with constraints to prevent grpcio installation
+          pip install --prefer-binary --constraint constraints.txt -r requirements.txt
 
       - name: Setup Terraform (for outputs)
         uses: hashicorp/setup-terraform@v3

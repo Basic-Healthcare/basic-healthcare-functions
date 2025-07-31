@@ -143,7 +143,17 @@ jobs:
       - name: Terraform Plan (Fresh)
         working-directory: infra
         run: |
-          terraform plan -var-file="terraform.tfvars.json" -detailed-exitcode -no-color -out tfplan-apply
+          export exitcode=0
+          terraform plan -var-file="terraform.tfvars.json" -detailed-exitcode -no-color -out tfplan-apply || export exitcode=$?
+          
+          if [ $exitcode -eq 1 ]; then
+            echo "Terraform Plan Failed"
+            exit 1
+          elif [ $exitcode -eq 0 ]; then
+            echo "No changes detected"
+          elif [ $exitcode -eq 2 ]; then
+            echo "Changes detected - proceeding with apply"
+          fi
 
       - name: Terraform Apply
         working-directory: infra

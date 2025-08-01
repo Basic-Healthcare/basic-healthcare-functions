@@ -9,11 +9,11 @@ resource "azurerm_kubernetes_cluster" "main" {
     name       = "default"
     node_count = 1
     vm_size    = "Standard_B2s"
-    
+
     # Enable auto-scaling for cost optimization
     enable_auto_scaling = true
-    min_count          = 1
-    max_count          = 3
+    min_count           = 1
+    max_count           = 3
   }
 
   identity {
@@ -46,7 +46,7 @@ resource "azurerm_container_registry" "main" {
 resource "azurerm_role_assignment" "aks_acr_pull" {
   principal_id                     = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
   role_definition_name             = "AcrPull"
-  scope                           = azurerm_container_registry.main.id
+  scope                            = azurerm_container_registry.main.id
   skip_service_principal_aad_check = true
 }
 
@@ -84,7 +84,7 @@ resource "null_resource" "aks_deployment" {
     cluster_name = azurerm_kubernetes_cluster.main.name
     registry_url = azurerm_container_registry.main.login_server
     # Trigger on file changes
-    app_content = filemd5("../aks-app/app.py")
+    app_content        = filemd5("../aks-app/app.py")
     dockerfile_content = filemd5("../aks-app/Dockerfile")
   }
 }

@@ -118,11 +118,11 @@ resource "azurerm_storage_account" "data_lake" {
   account_replication_type = "LRS"
   account_kind             = "StorageV2"
   is_hns_enabled           = true # Enable hierarchical namespace for Data Lake Gen2
-  
+
   # Security settings
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
-  
+
   # Network access rules
   network_rules {
     default_action = "Allow" # In production, consider "Deny" with specific allow rules
@@ -210,7 +210,7 @@ resource "azurerm_linux_function_app" "main" {
   site_config {
     application_insights_key               = azurerm_application_insights.main.instrumentation_key
     application_insights_connection_string = azurerm_application_insights.main.connection_string
-    
+
     application_stack {
       python_version = "3.11"
     }

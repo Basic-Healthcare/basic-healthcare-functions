@@ -145,7 +145,7 @@ jobs:
         run: |
           export exitcode=0
           terraform plan -var-file="terraform.tfvars.json" -detailed-exitcode -no-color -out tfplan-apply || export exitcode=$?
-          
+
           if [ $exitcode -eq 1 ]; then
             echo "Terraform Plan Failed"
             exit 1
@@ -163,16 +163,16 @@ jobs:
           echo "🚀 Starting Terraform Apply with verbose logging..."
           echo "📋 Plan file contents:"
           terraform show tfplan-apply
-          
+
           echo "🔧 Applying configuration..."
           set -e  # Exit on any error
           terraform apply -auto-approve tfplan-apply
-          
+
           echo "✅ Apply command completed successfully"
-          
+
           echo "📊 Checking state after apply..."
           terraform state list
-          
+
           echo "📋 Checking outputs..."
           terraform output || echo "No outputs available yet"
 
@@ -202,13 +202,13 @@ jobs:
           echo "## Infrastructure Deployment Complete 🚀" >> $GITHUB_STEP_SUMMARY
           echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          
+
           # Handle outputs gracefully
           FUNCTION_APP_NAME=$(terraform output -raw function_app_name 2>/dev/null || echo "not-available")
           FUNCTION_APP_URL=$(terraform output -raw function_app_url 2>/dev/null || echo "not-available")
           STORAGE_ACCOUNT_NAME=$(terraform output -raw storage_account_name 2>/dev/null || echo "not-available")
           RESOURCE_GROUP_NAME=$(terraform output -raw resource_group_name 2>/dev/null || echo "not-available")
-          
+
           echo "| Function App | $FUNCTION_APP_NAME |" >> $GITHUB_STEP_SUMMARY
           echo "| Function App URL | $FUNCTION_APP_URL |" >> $GITHUB_STEP_SUMMARY
           echo "| Storage Account | $STORAGE_ACCOUNT_NAME |" >> $GITHUB_STEP_SUMMARY
@@ -257,14 +257,14 @@ jobs:
         working-directory: infra
         run: |
           echo "🔍 Verifying Terraform vs Azure Reality..."
-          
+
           echo "📊 Terraform State:"
           terraform state list || echo "No Terraform state found"
-          
+
           echo "🏗️ Actual Azure Resources:"
           echo "Checking for resource group 'rg-dev-v2-EastUS'..."
           az group show --name "rg-dev-v2-EastUS" --output table 2>/dev/null || echo "Resource group not found in Azure"
-          
+
           echo "📋 All resource groups in subscription:"
           az group list --query "[?contains(name, 'rg-dev')].{Name:name, Location:location}" --output table
 
@@ -272,10 +272,10 @@ jobs:
         id: get-function-app
         run: |
           echo "🔍 Attempting to find Function App using Azure CLI..."
-          
+
           # Try to get function app from resource group
           FUNCTION_APP_NAME=$(az functionapp list --resource-group "rg-dev-v2-EastUS" --query "[0].name" -o tsv 2>/dev/null || echo "not-found")
-          
+
           if [ "$FUNCTION_APP_NAME" != "not-found" ] && [ ! -z "$FUNCTION_APP_NAME" ]; then
             echo "✅ Found Function App: $FUNCTION_APP_NAME"
             echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
@@ -312,13 +312,13 @@ jobs:
       - name: Deploy to Azure Functions using Run From Package
         run: |
           FUNCTION_APP_NAME="${{ steps.get-function-app.outputs.function_app_name }}"
-          
+
           # Validate function app name
           if [ "$FUNCTION_APP_NAME" = "not-found" ] || [ -z "$FUNCTION_APP_NAME" ]; then
             echo "❌ Function app name not available. Cannot deploy."
             exit 1
           fi
-          
+
           echo "🚀 Deploying to Function App: $FUNCTION_APP_NAME"
 
           # Upload zip package to Function App (using known resource group name)

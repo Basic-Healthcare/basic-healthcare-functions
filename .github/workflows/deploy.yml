@@ -253,22 +253,46 @@ jobs:
         working-directory: infra
         run: terraform init
 
-      - name: Get Function App Name
-        id: get-function-app
+      - name: Verify Infrastructure Creation
         working-directory: infra
         run: |
-          # Check if outputs are available
-          if terraform output -json > /dev/null 2>&1; then
-            FUNCTION_APP_NAME=$(terraform output -raw function_app_name 2>/dev/null || echo "output-not-found")
+          echo "🔍 Verifying Terraform vs Azure Reality..."
+          
+          echo "📊 Terraform State:"
+          terraform state list || echo "No Terraform state found"
+          
+          echo "🏗️ Actual Azure Resources:"
+          echo "Checking for resource group 'rg-dev-v2-EastUS'..."
+          az group show --name "rg-dev-v2-EastUS" --output table 2>/dev/null || echo "Resource group not found in Azure"
+          
+          echo "📋 All resource groups in subscription:"
+          az group list --query "[?contains(name, 'rg-dev')].{Name:name, Location:location}" --output table
+
+      - name: Get Function App Name (Alternative Method)
+        id: get-function-app
+        run: |
+          echo "🔍 Attempting to find Function App using Azure CLI..."
+          
+          # Try to get function app from resource group
+          FUNCTION_APP_NAME=$(az functionapp list --resource-group "rg-dev-v2-EastUS" --query "[0].name" -o tsv 2>/dev/null || echo "not-found")
+          
+          if [ "$FUNCTION_APP_NAME" != "not-found" ] && [ ! -z "$FUNCTION_APP_NAME" ]; then
+            echo "✅ Found Function App: $FUNCTION_APP_NAME"
             echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
-            echo "Function App Name: $FUNCTION_APP_NAME"
-            
-            if [ "$FUNCTION_APP_NAME" = "output-not-found" ]; then
-              echo "❌ Function app name not available from Terraform outputs"
-              exit 1
-            fi
           else
-            echo "❌ Terraform outputs not available"
+            echo "❌ Function App not found. Checking if resource group exists..."
+            RG_EXISTS=$(az group exists --name "rg-dev-v2-EastUS" 2>/dev/null || echo "false")
+            
+            if [ "$RG_EXISTS" = "true" ]; then
+              echo "✅ Resource group exists. Listing all resources:"
+              az resource list --resource-group "rg-dev-v2-EastUS" --output table
+            else
+              echo "❌ Resource group 'rg-dev-v2-EastUS' does not exist"
+              echo "🔍 Available resource groups:"
+              az group list --query "[].name" -o table
+            fi
+            
+            echo "function_app_name=not-found" >> $GITHUB_OUTPUT
             exit 1
           fi
 

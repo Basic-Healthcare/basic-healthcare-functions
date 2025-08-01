@@ -92,24 +92,3 @@ output "container_registry_admin_password" {
   value       = azurerm_container_registry.main.admin_password
   sensitive   = true
 }
-
-# AKS Outputs
-output "aks_cluster_name" {
-  description = "The name of the AKS cluster"
-  value       = azurerm_kubernetes_cluster.main.name
-}
-
-output "aks_cluster_fqdn" {
-  description = "The FQDN of the AKS cluster"
-  value       = azurerm_kubernetes_cluster.main.fqdn
-}
-
-output "container_registry_name" {
-  description = "The name of the container registry"
-  value       = azurerm_container_registry.main.name
-}
-
-output "container_registry_login_server" {
-  description = "The login server of the container registry"
-  value       = azurerm_container_registry.main.login_server
-}

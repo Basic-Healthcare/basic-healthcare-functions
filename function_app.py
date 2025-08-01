@@ -3,6 +3,7 @@ import logging
 import json
 from datetime import datetime
 
+# Trigger redeployment - Azure resources were recreated
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 def health_check(req: func.HttpRequest) -> func.HttpResponse:

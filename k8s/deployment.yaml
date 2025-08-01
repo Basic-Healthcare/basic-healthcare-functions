@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: basic-healthcare-app
+  labels:
+    app: basic-healthcare-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: basic-healthcare-app
+  template:
+    metadata:
+      labels:
+        app: basic-healthcare-app
+    spec:
+      containers:
+      - name: basic-healthcare-app
+        image: ${CONTAINER_REGISTRY}/basic-healthcare-app:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: PORT
+          value: "5000"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"

@@ -55,8 +55,8 @@ resource "azurerm_container_registry" "main" {
 resource "null_resource" "aks_deployment" {
   depends_on = [
     azurerm_kubernetes_cluster.main,
-    azurerm_container_registry.main,
-    azurerm_role_assignment.aks_acr_pull
+    azurerm_container_registry.main
+    # Removed azurerm_role_assignment.aks_acr_pull dependency - role assignment created manually
   ]
 
   provisioner "local-exec" {
